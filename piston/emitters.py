@@ -233,19 +233,19 @@ class Emitter(object):
                         ret[maybe_field] = _any(met_fields[maybe_field](data))
 
                     else:
-                        maybe = getattr(data, maybe_field, None)
-                        if maybe is not None:
+                        try:
+                            maybe = getattr(data, maybe_field)
+                        except AttributeError:
+                            handler_f = getattr(handler or self.handler, maybe_field, None)
+
+                            if handler_f:
+                                ret[maybe_field] = _any(handler_f(data))
+                        else:
                             if callable(maybe):
                                 if len(inspect.getargspec(maybe)[0]) <= 1:
                                     ret[maybe_field] = _any(maybe())
                             else:
                                 ret[maybe_field] = _any(maybe)
-                        else:
-                            handler_f = getattr(handler or self.handler, maybe_field, None)
-
-                            if handler_f:
-                                ret[maybe_field] = _any(handler_f(data))
-
             else:
                 for f in data._meta.fields:
                     ret[f.attname] = _any(getattr(data, f.attname))
