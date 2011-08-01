@@ -236,6 +236,7 @@ class Emitter(object):
                         try:
                             maybe = getattr(data, maybe_field)
                         except AttributeError:
+                            maybe = None
                             handler_f = getattr(handler or self.handler, maybe_field, None)
 
                             if handler_f:
