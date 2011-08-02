@@ -38,3 +38,8 @@ class ListFieldsModel(models.Model):
 class Issue58Model(models.Model):
     read = models.BooleanField(default=False)
     model = models.CharField(max_length=1, blank=True, null=True)
+
+class ConditionalFieldsModel(models.Model):
+    field_one = models.CharField(max_length=15)
+    field_two = models.CharField(max_length=15)
+    fk_field = models.ForeignKey(TestModel)

@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from piston import oauth
 from piston.models import Consumer, Token
@@ -15,7 +16,7 @@ except ImportError:
 
 import urllib, base64
 
-from test_project.apps.testapp.models import TestModel, ExpressiveTestModel, Comment, InheritedModel, Issue58Model, ListFieldsModel
+from test_project.apps.testapp.models import TestModel, ExpressiveTestModel, Comment, InheritedModel, Issue58Model, ListFieldsModel, ConditionalFieldsModel
 from test_project.apps.testapp import signals
 
 class MainTests(TestCase):
@@ -473,3 +474,48 @@ class Issue58ModelTests(MainTests):
         resp = self.client.post('/api/issue58.json', outgoing, content_type='application/json',
                                 HTTP_AUTHORIZATION=self.auth_string)
         self.assertEquals(resp.status_code, 201)
+
+class ConditionalFieldsTest(MainTests):
+    def setUp(self):
+        super(ConditionalFieldsTest, self).setUp()
+        self.test_model_obj = TestModel.objects.create(test1='a', test2='b')
+        self.cond_fields_obj = ConditionalFieldsModel.objects.create(
+            field_one='c', field_two='d', fk_field=self.test_model_obj)
+        
+    def test_conditional_list_fields(self):
+        response = self.client.get(reverse('conditional-list'))
+        response_obj = simplejson.loads(response.content)
+        self.assertEqual(len(response_obj), 1)
+        response_struct = response_obj[0]
+        self.assertEqual(response_struct.keys(), ['field_two'])
+        self.assertEqual(response_struct['field_two'], 'd')
+        
+        response = self.client.get(reverse('conditional-list'),
+                                   HTTP_AUTHORIZATION=self.auth_string)
+        response_obj = simplejson.loads(response.content)
+        self.assertEqual(len(response_obj), 1)
+        response_struct = response_obj[0]
+        self.assertEqual(len(response_struct.keys()), 2)
+        self.assert_('field_one' in response_struct.keys())
+        self.assert_('field_two' in response_struct.keys())
+        self.assertEqual(response_struct['field_one'], 'c')
+        self.assertEqual(response_struct['field_two'], 'd')
+        
+    def test_conditional_detail_fields(self):
+        response = self.client.get(reverse('conditional-detail', 
+                                           args=[self.cond_fields_obj.pk]))
+        response_obj = simplejson.loads(response.content)
+        self.assertEqual(response_obj.keys(), ['field_one'])
+        self.assertEqual(response_obj['field_one'], 'c')
+        
+        response = self.client.get(reverse('conditional-detail',
+                                           args=[self.cond_fields_obj.pk]),
+                                   HTTP_AUTHORIZATION=self.auth_string)
+        response_obj = simplejson.loads(response.content)
+        self.assertEqual(len(response_obj.keys()), 3)
+        self.assert_('field_one' in response_obj.keys())
+        self.assert_('field_two' in response_obj.keys())
+        self.assert_('fk_field' in response_obj.keys())
+        self.assertEqual(response_obj['field_one'], 'c')
+        self.assertEqual(response_obj['field_two'], 'd')
+        self.assertEqual(type(response_obj['fk_field']), dict)
