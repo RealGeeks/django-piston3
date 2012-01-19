@@ -243,7 +243,10 @@ class Emitter(object):
                                 ret[maybe_field] = _any(handler_f(data))
                         else:
                             if callable(maybe):
-                                if len(inspect.getargspec(maybe)[0]) <= 1:
+                                argspec = inspect.getargspec(maybe)
+                                args_len = len(argspec[0])
+                                defaults_len = len(argspec[2]) if argspec[2] else 0
+                                if args_len - defaults_len <= 1:
                                     ret[maybe_field] = _any(maybe())
                             else:
                                 ret[maybe_field] = _any(maybe)
