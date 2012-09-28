@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.conf import settings
@@ -14,9 +15,9 @@ except ImportError:
     print "Can't run YAML testsuite"
     yaml = None
 
-import urllib, base64
+import urllib, base64, tempfile
 
-from test_project.apps.testapp.models import TestModel, ExpressiveTestModel, Comment, InheritedModel, Issue58Model, ListFieldsModel, ConditionalFieldsModel
+from test_project.apps.testapp.models import TestModel, ExpressiveTestModel, Comment, InheritedModel, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC, ConditionalFieldsModel
 from test_project.apps.testapp import signals
 
 class MainTests(TestCase):
@@ -475,13 +476,71 @@ class Issue58ModelTests(MainTests):
                                 HTTP_AUTHORIZATION=self.auth_string)
         self.assertEquals(resp.status_code, 201)
 
+
+class Issue188ValidateWithFiles(MainTests):
+    def test_whoops_no_file_upload(self):
+        resp = self.client.post(
+            reverse('file-upload-test'),
+            data={'chaff': 'pewpewpew'})
+        self.assertEquals(resp.status_code, 400)
+    
+    def test_upload_with_file(self):
+        tmp_fs = tempfile.NamedTemporaryFile(suffix='.txt')
+        content = 'le_content'
+        tmp_fs.write(content)
+        tmp_fs.seek(0)
+        resp = self.client.post(
+            reverse('file-upload-test'),
+            data={'chaff': 'pewpewpew',
+                  'le_file': tmp_fs})
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(simplejson.loads(resp.content),
+                          {'chaff': 'pewpewpew',
+                           'file_size': len(content)})
+
+class EmitterFormat(MainTests):
+    def test_format_in_url(self):
+        resp = self.client.get('/api/entries.json',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/json; charset=utf-8')
+        resp = self.client.get('/api/entries.xml',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'text/xml; charset=utf-8')
+        resp = self.client.get('/api/entries.yaml',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/x-yaml; charset=utf-8')
+
+    def test_format_in_get_data(self):
+        resp = self.client.get('/api/entries/?format=json',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/json; charset=utf-8')
+        resp = self.client.get('/api/entries/?format=xml',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'text/xml; charset=utf-8')
+        resp = self.client.get('/api/entries/?format=yaml',
+                               HTTP_AUTHORIZATION=self.auth_string)
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/x-yaml; charset=utf-8')
+        
+
 class ConditionalFieldsTest(MainTests):
     def setUp(self):
         super(ConditionalFieldsTest, self).setUp()
         self.test_model_obj = TestModel.objects.create(test1='a', test2='b')
         self.cond_fields_obj = ConditionalFieldsModel.objects.create(
             field_one='c', field_two='d', fk_field=self.test_model_obj)
-        
+
     def test_conditional_list_fields(self):
         response = self.client.get(reverse('conditional-list'))
         response_obj = simplejson.loads(response.content)
@@ -489,7 +548,6 @@ class ConditionalFieldsTest(MainTests):
         response_struct = response_obj[0]
         self.assertEqual(response_struct.keys(), ['field_two'])
         self.assertEqual(response_struct['field_two'], 'd')
-        
         response = self.client.get(reverse('conditional-list'),
                                    HTTP_AUTHORIZATION=self.auth_string)
         response_obj = simplejson.loads(response.content)
@@ -500,14 +558,13 @@ class ConditionalFieldsTest(MainTests):
         self.assert_('field_two' in response_struct.keys())
         self.assertEqual(response_struct['field_one'], 'c')
         self.assertEqual(response_struct['field_two'], 'd')
-        
+
     def test_conditional_detail_fields(self):
         response = self.client.get(reverse('conditional-detail', 
                                            args=[self.cond_fields_obj.pk]))
         response_obj = simplejson.loads(response.content)
         self.assertEqual(response_obj.keys(), ['field_one'])
         self.assertEqual(response_obj['field_one'], 'c')
-        
         response = self.client.get(reverse('conditional-detail',
                                            args=[self.cond_fields_obj.pk]),
                                    HTTP_AUTHORIZATION=self.auth_string)
@@ -519,3 +576,56 @@ class ConditionalFieldsTest(MainTests):
         self.assertEqual(response_obj['field_one'], 'c')
         self.assertEqual(response_obj['field_two'], 'd')
         self.assertEqual(type(response_obj['fk_field']), dict)
+
+    def test_format_in_accept_headers(self):
+        resp = self.client.get('/api/entries/',
+                               HTTP_AUTHORIZATION=self.auth_string,
+                               HTTP_ACCEPT='application/json')
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/json; charset=utf-8')
+        resp = self.client.get('/api/entries/',
+                               HTTP_AUTHORIZATION=self.auth_string,
+                               HTTP_ACCEPT='text/xml')
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'text/xml; charset=utf-8')
+        resp = self.client.get('/api/entries/',
+                               HTTP_AUTHORIZATION=self.auth_string,
+                               HTTP_ACCEPT='application/x-yaml')
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/x-yaml; charset=utf-8')
+    
+    def test_strict_accept_headers(self):
+        import urls
+        self.assertFalse(urls.entries.strict_accept)
+        self.assertEquals(urls.entries.default_emitter, 'json')
+        resp = self.client.get('/api/entries/',
+                               HTTP_AUTHORIZATION=self.auth_string,
+                               HTTP_ACCEPT='text/html')
+        self.assertEquals(resp.status_code, 200)
+        self.assertEquals(resp['Content-type'],
+                          'application/json; charset=utf-8')
+        urls.entries.strict_accept = True
+        resp = self.client.get('/api/entries/',
+                               HTTP_AUTHORIZATION=self.auth_string,
+                               HTTP_ACCEPT='text/html')
+        self.assertEquals(resp.status_code, 406)
+
+class CircularReferenceTest(MainTests):
+    def init_delegate(self):
+        self.a = CircularA.objects.create(name='foo')
+        self.b = CircularB.objects.create(name='bar')
+        self.c = CircularC.objects.create(name='baz')
+        self.a.link = self.b; self.a.save()
+        self.b.link = self.c; self.b.save()
+        self.c.link = self.a; self.c.save()
+
+    def test_circular_model_references(self):
+        self.assertRaises(
+            RuntimeError,
+            self.client.get,
+            '/api/circular_a/',
+            HTTP_AUTHORIZATION=self.auth_string)
+

@@ -14,3 +14,4 @@ develop-eggs
 .DS_Store
 .svn
 *.swp
+docs/_build

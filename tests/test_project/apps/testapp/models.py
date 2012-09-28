@@ -43,3 +43,16 @@ class ConditionalFieldsModel(models.Model):
     field_one = models.CharField(max_length=15)
     field_two = models.CharField(max_length=15)
     fk_field = models.ForeignKey(TestModel)
+
+class CircularA(models.Model):
+    link = models.ForeignKey('testapp.CircularB', null=True)
+    name = models.CharField(max_length=15)
+
+class CircularB(models.Model):
+    link = models.ForeignKey('testapp.CircularC', null=True)
+    name = models.CharField(max_length=15)
+
+class CircularC(models.Model):
+    link = models.ForeignKey('testapp.CircularA', null=True)
+    name = models.CharField(max_length=15)
+
