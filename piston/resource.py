@@ -7,6 +7,7 @@ from django.views.debug import ExceptionReporter
 from django.views.decorators.vary import vary_on_headers
 from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
+from django.core.signals import got_request_exception
 from django.db.models.query import QuerySet, RawQuerySet
 from django.http import Http404
 
@@ -290,8 +291,8 @@ class Resource(object):
         """
         if isinstance(e, FormValidationError):
             return self.form_validation_response(e)
-
-        elif isinstance(e, TypeError):
+        got_request_exception.send(sender=type(self), request=request)
+        if isinstance(e, TypeError):
             result = rc.BAD_REQUEST
             hm = HandlerMethod(meth)
             sig = hm.signature
