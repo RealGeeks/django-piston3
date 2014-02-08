@@ -4,6 +4,8 @@
 
 """Validate Javascript Identifiers for use as JSON-P callback parameters."""
 
+from six import text_type, unichr
+
 import re
 from unicodedata import category
 
@@ -60,9 +62,9 @@ def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
     if not identifier:
         return False
 
-    if not isinstance(identifier, unicode):
+    if not isinstance(identifier, text_type):
         try:
-            identifier = unicode(identifier, 'utf-8')
+            identifier = text_type(identifier, 'utf-8')
         except UnicodeDecodeError:
             return False
 
@@ -146,7 +148,7 @@ def test():
       >>> is_valid_javascript_identifier(r'\u0062') # u'b'
       True
 
-      >>> is_valid_javascript_identifier(r'\u62')
+      >>> is_valid_javascript_identifier(r'\u0062')
       False
 
       >>> is_valid_javascript_identifier(r'\u0020')

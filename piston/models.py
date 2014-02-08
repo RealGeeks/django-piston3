@@ -1,4 +1,11 @@
-import urllib, time, urlparse
+from six import PY3
+
+import time
+if PY3:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
+else:
+    import urllib
 
 # Django imports
 from django.conf import settings
@@ -8,8 +15,8 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail, mail_admins
 
 # Piston imports
-from managers import TokenManager, ConsumerManager, ResourceManager
-from signals import consumer_post_save, consumer_post_delete
+from .managers import TokenManager, ConsumerManager, ResourceManager
+from .signals import consumer_post_save, consumer_post_delete
 
 KEY_SIZE = 18
 SECRET_SIZE = 32
@@ -85,7 +92,7 @@ class Token(models.Model):
     secret = models.CharField(max_length=SECRET_SIZE)
     verifier = models.CharField(max_length=VERIFIER_SIZE)
     token_type = models.IntegerField(choices=TOKEN_TYPES)
-    timestamp = models.IntegerField(default=long(time.time()))
+    timestamp = models.IntegerField(default=int(time.time()))
     is_approved = models.BooleanField(default=False)
     
     user = models.ForeignKey(AUTH_USER_MODEL,

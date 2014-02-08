@@ -1,7 +1,8 @@
-import inspect, handler
+import inspect
 
-from piston.handler import typemapper
-from piston.handler import handler_tracker
+from . import handler
+from .handler import typemapper
+from .handler import handler_tracker
 
 from django.core.urlresolvers import get_resolver, get_callable, get_script_prefix
 from django.shortcuts import render_to_response
@@ -89,7 +90,7 @@ class HandlerDocumentation(object):
             if not met:
                 continue
                 
-            stale = inspect.getmodule(met.im_func) is not inspect.getmodule(self.handler)
+            stale = inspect.getmodule(met.__func__) is not inspect.getmodule(self.handler)
 
             if not self.handler.is_anonymous:
                 if met and (not stale or include_default):
