@@ -10,6 +10,8 @@ except ImportError:
     
 import os
 
+REQUIRES = open('requirements.txt').read()
+
 setup(
     name = "django-piston3",
     version = "0.2.3",
@@ -25,7 +27,9 @@ setup(
     author_email = 'jesper@noehr.org',
     maintainer = 'Stefan Zimmermann',
     maintainer_email = 'zimmermann.code@gmail.com',
-    packages = [p.replace('piston', 'piston3') for p in find_packages()],
+    install_requires=REQUIRES,
+    packages = [p.replace('piston', 'piston3')
+                for p in find_packages(exclude=['piston3'])],
     package_dir = {'piston3': 'piston'},
     ## namespace_packages = ['piston'],
     include_package_data = True,
