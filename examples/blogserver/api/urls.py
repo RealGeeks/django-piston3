@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 from piston3.resource import Resource
 from piston3.authentication import HttpBasicAuthentication
 from piston3.doc import documentation_view
