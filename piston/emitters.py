@@ -11,15 +11,7 @@ try:
 except ImportError:
     yaml = None
 
-# Fallback since `any` isn't in Python <2.5
-try:
-    any
-except NameError:
-    def any(iterable):
-        for element in iterable:
-            if element:
-                return True
-        return False
+import json
 
 from django.db.models.query import QuerySet
 from django.db.models import Model, permalink
@@ -29,16 +21,6 @@ from django.core.urlresolvers import reverse, NoReverseMatch
 from django.core.serializers.json import DateTimeAwareJSONEncoder
 from django.http import HttpResponse
 from django.core import serializers
-
-import django
-if django.VERSION >= (1, 5):
-    # In 1.5 and later, DateTimeAwareJSONEncoder inherits from json.JSONEncoder,
-    # while in 1.4 and earlier it inherits from simplejson.JSONEncoder.  The two
-    # are not compatible due to keyword argument namedtuple_as_object, and we
-    # have to ensure that the 'dumps' function we use is the right one.
-    import json
-else:
-    from django.utils import simplejson as json
 
 from .utils import HttpStatusCode, Mimer
 from .validate_jsonp import is_valid_jsonp_callback_value
