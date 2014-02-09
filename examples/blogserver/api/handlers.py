@@ -1,5 +1,5 @@
-from piston.handler import BaseHandler, AnonymousBaseHandler
-from piston.utils import rc, require_mime, require_extended
+from piston3.handler import BaseHandler, AnonymousBaseHandler
+from piston3.utils import rc, require_mime, require_extended
 
 from blogserver.blog.models import Blogpost
 

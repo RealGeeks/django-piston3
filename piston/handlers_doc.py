@@ -1,5 +1,5 @@
-from piston.doc import generate_doc
-from piston.handler import handler_tracker
+from .doc import generate_doc
+from .handler import handler_tracker
 import re
 
 def generate_piston_documentation(app, docname, source):

@@ -31,3 +31,5 @@ MIDDLEWARE_CLASSES = (
     'piston.middleware.CommonMiddlewareCompatProxy',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
+
+SECRET_KEY = 'bla'

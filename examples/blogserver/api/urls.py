@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import *
-from piston.resource import Resource
-from piston.authentication import HttpBasicAuthentication
-from piston.doc import documentation_view
+from piston3.resource import Resource
+from piston3.authentication import HttpBasicAuthentication
+from piston3.doc import documentation_view
 
 from blogserver.api.handlers import BlogpostHandler
 

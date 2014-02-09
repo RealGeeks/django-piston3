@@ -1,20 +1,22 @@
+from __future__ import print_function
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.conf import settings
 
-from piston import oauth
-from piston.models import Consumer, Token
-from piston.forms import OAuthAuthenticationForm
+from piston3 import oauth
+from piston3.models import Consumer, Token
+from piston3.forms import OAuthAuthenticationForm
 
 try:
     import yaml
 except ImportError:
-    print "Can't run YAML testsuite"
+    print("Can't run YAML testsuite")
     yaml = None
 
-import urllib, base64, tempfile
+import base64, tempfile
 
 from test_project.apps.testapp.models import TestModel, ExpressiveTestModel, Comment, InheritedModel, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC
 from test_project.apps.testapp import signals
@@ -552,7 +554,7 @@ class EmitterFormat(MainTests):
                           'application/x-yaml; charset=utf-8')
     
     def test_strict_accept_headers(self):
-        import urls
+        from . import urls
         self.assertFalse(urls.entries.strict_accept)
         self.assertEquals(urls.entries.default_emitter, 'json')
         resp = self.client.get('/api/entries/',

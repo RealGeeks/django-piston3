@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
-from piston.resource import Resource
-from piston.authentication import HttpBasicAuthentication, HttpBasicSimple
+from piston3.resource import Resource
+from piston3.authentication import HttpBasicAuthentication, HttpBasicSimple
 
 from test_project.apps.testapp.handlers import EntryHandler, ExpressiveHandler, AbstractHandler, EchoHandler, PlainOldObjectHandler, Issue58Handler, ListFieldsHandler, FileUploadHandler, CircularAHandler
 

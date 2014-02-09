@@ -1,10 +1,10 @@
 from django.core.paginator import Paginator
 
-from piston.handler import BaseHandler
-from piston.utils import rc, validate
+from piston3.handler import BaseHandler
+from piston3.utils import rc, validate
 
-from models import TestModel, ExpressiveTestModel, Comment, InheritedModel, PlainOldObject, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC
-from forms import EchoForm, FormWithFileField
+from .models import TestModel, ExpressiveTestModel, Comment, InheritedModel, PlainOldObject, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC
+from .forms import EchoForm, FormWithFileField
 from test_project.apps.testapp import signals
 
 class EntryHandler(BaseHandler):
