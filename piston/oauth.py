@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-from six import PY3
+from six import PY3, text_type
 
 import cgi
 if PY3:
@@ -29,6 +29,7 @@ if PY3:
     import urllib.parse as urlparse
 else:
     import urllib
+    import urlparse
 import time
 import random
 import hmac
