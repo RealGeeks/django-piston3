@@ -181,20 +181,20 @@ class AbstractBaseClassTests(MainTests):
         result = self.client.get('/api/abstract.json',
                 HTTP_AUTHORIZATION=self.auth_string).content
                 
-        expected = b"""[
-    {
-        "id": 1, 
-        "some_other": "something else", 
-        "some_field": "something here"
-    }, 
-    {
-        "id": 2, 
-        "some_other": "something else", 
-        "some_field": "something here"
-    }
-]"""
+        expected = [
+          {
+              "id": 1,
+              "some_other": "something else",
+              "some_field": "something here"
+          },
+          {
+              "id": 2,
+              "some_other": "something else",
+              "some_field": "something here"
+          }
+        ]
         
-        self.assertEqual(result, expected)
+        self.assertEqual(json.loads(result.decode('utf-8')), expected)
 
     def test_specific_id(self):
         ids = (1, 2)
@@ -219,62 +219,40 @@ class IncomingExpressiveTests(MainTests):
         e2.save()
 
     def test_incoming_json(self):
-        outgoing = json.dumps({ 'title': 'test', 'content': 'test',
-                                'comments': [ { 'content': 'test1' },
-                                              { 'content': 'test2' } ] })
+        post = { 'title': 'test', 'content': 'test',
+                 'comments': [ { 'content': 'test1' },
+                               { 'content': 'test2' } ] }
+        outgoing = json.dumps(post)
     
-        expected = b"""[
-    {
-        "content": "bar", 
-        "comments": [], 
-        "title": "foo"
-    }, 
-    {
-        "content": "bar2", 
-        "comments": [], 
-        "title": "foo2"
-    }
-]"""
+        expected = [
+          {
+              "content": "bar",
+              "comments": [],
+              "title": "foo"
+          },
+          {
+              "content": "bar2",
+              "comments": [],
+              "title": "foo2"
+          }
+        ]
     
         result = self.client.get('/api/expressive.json',
             HTTP_AUTHORIZATION=self.auth_string).content
 
-        self.assertEqual(result, expected)
+        self.assertEqual(json.loads(result.decode('utf-8')), expected)
         
         resp = self.client.post('/api/expressive.json', outgoing, content_type='application/json',
             HTTP_AUTHORIZATION=self.auth_string)
             
         self.assertEqual(resp.status_code, 201)
         
-        expected = b"""[
-    {
-        "content": "bar", 
-        "comments": [], 
-        "title": "foo"
-    }, 
-    {
-        "content": "bar2", 
-        "comments": [], 
-        "title": "foo2"
-    }, 
-    {
-        "content": "test", 
-        "comments": [
-            {
-                "content": "test1"
-            }, 
-            {
-                "content": "test2"
-            }
-        ], 
-        "title": "test"
-    }
-]"""
+        expected.append(post)
         
         result = self.client.get('/api/expressive.json', 
             HTTP_AUTHORIZATION=self.auth_string).content
             
-        self.assertEqual(result, expected)
+        self.assertEqual(json.loads(result.decode('utf-8')), expected)
 
     def test_incoming_invalid_json(self):
         resp = self.client.post('/api/expressive.json',
@@ -353,7 +331,7 @@ class Issue36RegressionTests(MainTests):
     def test_simple(self):
         # First try it with POST to see if it works there
         if True:
-            fp = open(__file__, 'r')
+            fp = open(__file__, 'rb') # Need binary file for client data
             try:
                 response = self.client.post('/api/entries.xml',
                         {'file':fp}, HTTP_AUTHORIZATION=self.auth_string)
@@ -463,21 +441,21 @@ class Issue58ModelTests(MainTests):
     def test_incoming_json(self):
         outgoing = json.dumps({ 'read': True, 'model': 'T'})
 
-        expected = b"""[
-    {
-        "read": true, 
-        "model": "t"
-    }, 
-    {
-        "read": false, 
-        "model": "f"
-    }
-]"""
+        expected = [
+          {
+              "read": True,
+              "model": "t"
+          },
+          {
+              "read": False,
+              "model": "f"
+          }
+        ]
 
         # test GET
         result = self.client.get('/api/issue58.json',
                                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEqual(result, expected)
+        self.assertEqual(json.loads(result.decode('utf-8')), expected)
 
         # test POST
         resp = self.client.post('/api/issue58.json', outgoing, content_type='application/json',
@@ -551,36 +529,36 @@ class ConditionalFieldsTest(MainTests):
 
     def test_conditional_list_fields(self):
         response = self.client.get(reverse('conditional-list'))
-        response_obj = json.loads(response.content)
+        response_obj = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(response_obj), 1)
         response_struct = response_obj[0]
-        self.assertEqual(response_struct.keys(), ['field_two'])
+        self.assertEqual(list(response_struct.keys()), ['field_two'])
         self.assertEqual(response_struct['field_two'], 'd')
         response = self.client.get(reverse('conditional-list'),
                                    HTTP_AUTHORIZATION=self.auth_string)
-        response_obj = json.loads(response.content)
+        response_obj = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(response_obj), 1)
         response_struct = response_obj[0]
         self.assertEqual(len(response_struct.keys()), 2)
-        self.assert_('field_one' in response_struct.keys())
-        self.assert_('field_two' in response_struct.keys())
+        self.assertTrue('field_one' in response_struct.keys())
+        self.assertTrue('field_two' in response_struct.keys())
         self.assertEqual(response_struct['field_one'], 'c')
         self.assertEqual(response_struct['field_two'], 'd')
 
     def test_conditional_detail_fields(self):
         response = self.client.get(reverse('conditional-detail', 
                                            args=[self.cond_fields_obj.pk]))
-        response_obj = json.loads(response.content)
-        self.assertEqual(response_obj.keys(), ['field_one'])
+        response_obj = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(list(response_obj.keys()), ['field_one'])
         self.assertEqual(response_obj['field_one'], 'c')
         response = self.client.get(reverse('conditional-detail',
                                            args=[self.cond_fields_obj.pk]),
                                    HTTP_AUTHORIZATION=self.auth_string)
-        response_obj = json.loads(response.content)
+        response_obj = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(response_obj.keys()), 3)
-        self.assert_('field_one' in response_obj.keys())
-        self.assert_('field_two' in response_obj.keys())
-        self.assert_('fk_field' in response_obj.keys())
+        self.assertTrue('field_one' in response_obj.keys())
+        self.assertTrue('field_two' in response_obj.keys())
+        self.assertTrue('fk_field' in response_obj.keys())
         self.assertEqual(response_obj['field_one'], 'c')
         self.assertEqual(response_obj['field_two'], 'd')
         self.assertEqual(type(response_obj['fk_field']), dict)
