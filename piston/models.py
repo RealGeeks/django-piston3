@@ -6,6 +6,7 @@ if PY3:
     import urllib.parse as urlparse
 else:
     import urllib
+    import urlparse
 
 # Django imports
 from django.conf import settings
