@@ -1,4 +1,4 @@
-from six import PY3, u
+from six import PY3, text_type
 
 import sys, inspect
 
@@ -92,7 +92,7 @@ class Resource(object):
         `Resource` subclass.
         """
         resp = rc.BAD_REQUEST
-        resp.write(u' '+u(e.form.errors))
+        resp.write(u' '+text_type(e.form.errors))
         return resp
 
     @property
