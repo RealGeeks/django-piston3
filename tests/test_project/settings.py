@@ -15,7 +15,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions', 
     'django.contrib.sites',
     'django.contrib.admin',
-    'piston',
+    'piston3',
     'test_project.apps.testapp',
 )
 TEMPLATE_DIRS = (
