@@ -1,9 +1,10 @@
 from __future__ import print_function
 
+import json
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
-from django.utils import simplejson
 from django.conf import settings
 
 from piston3 import oauth
@@ -28,7 +29,8 @@ class MainTests(TestCase):
         self.user.is_superuser = True
         self.user.is_active = True
         self.user.save()
-        self.auth_string = 'Basic %s' % base64.encodestring('admin:admin').rstrip()
+        auth = base64.encodestring(b'admin:admin').rstrip()
+        self.auth_string = 'Basic %s' % auth.decode('ascii')
 
         if hasattr(self, 'init_delegate'):
             self.init_delegate()
@@ -109,25 +111,25 @@ class BasicAuthTest(MainTests):
 
     def test_invalid_auth_header(self):
         response = self.client.get('/api/entries/')
-        self.assertEquals(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)
 
         # no space
-        bad_auth_string = 'Basic%s' % base64.encodestring('admin:admin').rstrip()
+        bad_auth_string = 'Basic%s' % base64.encodestring(b'admin:admin').rstrip()
         response = self.client.get('/api/entries/',
             HTTP_AUTHORIZATION=bad_auth_string)
-        self.assertEquals(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)
 
         # no colon
-        bad_auth_string = 'Basic %s' % base64.encodestring('adminadmin').rstrip()
+        bad_auth_string = 'Basic %s' % base64.encodestring(b'adminadmin').rstrip()
         response = self.client.get('/api/entries/',
             HTTP_AUTHORIZATION=bad_auth_string)
-        self.assertEquals(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)
 
         # non base64 data
         bad_auth_string = 'Basic FOOBARQ!'
         response = self.client.get('/api/entries/',
             HTTP_AUTHORIZATION=bad_auth_string)
-        self.assertEquals(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)
 
 class TestMultipleAuthenticators(MainTests):
     def test_both_authenticators(self):
@@ -136,12 +138,16 @@ class TestMultipleAuthenticators(MainTests):
                                    ('admin', 'user'),
                                    ('admin', 'allwork'),
                                    ('admin', 'thisisneat')):
-            auth_string = 'Basic %s' % base64.encodestring('%s:%s' % (username, password)).rstrip()
+            auth = '%s:%s' % (username, password)
+            auth = auth.encode('ascii') # base64 only operates on bytes
+            auth = base64.encodestring(auth).rstrip()
+            auth = auth.decode('ascii')
+            auth_string = 'Basic %s' % auth
 
             response = self.client.get('/api/multiauth/',
                 HTTP_AUTHORIZATION=auth_string)
 
-            self.assertEquals(response.status_code, 200, 'Failed with combo of %s:%s' % (username, password))
+            self.assertEqual(response.status_code, 200, 'Failed with combo of %s:%s' % (username, password))
 
 class MultiXMLTests(MainTests):
     def init_delegate(self):
@@ -151,17 +157,17 @@ class MultiXMLTests(MainTests):
         self.t2_data.save()
 
     def test_multixml(self):
-        expected = '<?xml version="1.0" encoding="utf-8"?>\n<response><resource><test1>None</test1><test2>None</test2></resource><resource><test1>None</test1><test2>None</test2></resource></response>'
+        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><resource><test1>None</test1><test2>None</test2></resource><resource><test1>None</test1><test2>None</test2></resource></response>'
         result = self.client.get('/api/entries.xml',
                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEquals(expected, result)
+        self.assertEqual(expected, result)
 
     def test_singlexml(self):
         obj = TestModel.objects.all()[0]
-        expected = '<?xml version="1.0" encoding="utf-8"?>\n<response><test1>None</test1><test2>None</test2></response>'
+        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><test1>None</test1><test2>None</test2></response>'
         result = self.client.get('/api/entry-%d.xml' % (obj.pk,),
                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEquals(expected, result)
+        self.assertEqual(expected, result)
 
 class AbstractBaseClassTests(MainTests):
     def init_delegate(self):
@@ -174,7 +180,7 @@ class AbstractBaseClassTests(MainTests):
         result = self.client.get('/api/abstract.json',
                 HTTP_AUTHORIZATION=self.auth_string).content
                 
-        expected = """[
+        expected = b"""[
     {
         "id": 1, 
         "some_other": "something else", 
@@ -187,23 +193,22 @@ class AbstractBaseClassTests(MainTests):
     }
 ]"""
         
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
 
     def test_specific_id(self):
         ids = (1, 2)
-        be = """{
-    "id": %d, 
-    "some_other": "something else", 
-    "some_field": "something here"
-}"""
+        expected = {
+          "some_other": "something else",
+          "some_field": "something here"
+          }
         
         for id_ in ids:
             result = self.client.get('/api/abstract/%d.json' % id_,
                     HTTP_AUTHORIZATION=self.auth_string).content
                     
-            expected = be % id_
+            expected['id'] = id_
             
-            self.assertEquals(result, expected)
+            self.assertEqual(json.loads(result.decode('utf-8')), expected)
 
 class IncomingExpressiveTests(MainTests):
     def init_delegate(self):
@@ -213,11 +218,11 @@ class IncomingExpressiveTests(MainTests):
         e2.save()
 
     def test_incoming_json(self):
-        outgoing = simplejson.dumps({ 'title': 'test', 'content': 'test',
-                                      'comments': [ { 'content': 'test1' },
-                                                    { 'content': 'test2' } ] })
+        outgoing = json.dumps({ 'title': 'test', 'content': 'test',
+                                'comments': [ { 'content': 'test1' },
+                                              { 'content': 'test2' } ] })
     
-        expected = """[
+        expected = b"""[
     {
         "content": "bar", 
         "comments": [], 
@@ -233,14 +238,14 @@ class IncomingExpressiveTests(MainTests):
         result = self.client.get('/api/expressive.json',
             HTTP_AUTHORIZATION=self.auth_string).content
 
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
         
         resp = self.client.post('/api/expressive.json', outgoing, content_type='application/json',
             HTTP_AUTHORIZATION=self.auth_string)
             
-        self.assertEquals(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)
         
-        expected = """[
+        expected = b"""[
     {
         "content": "bar", 
         "comments": [], 
@@ -268,20 +273,20 @@ class IncomingExpressiveTests(MainTests):
         result = self.client.get('/api/expressive.json', 
             HTTP_AUTHORIZATION=self.auth_string).content
             
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
 
     def test_incoming_invalid_json(self):
         resp = self.client.post('/api/expressive.json',
             'foo',
             HTTP_AUTHORIZATION=self.auth_string,
             content_type='application/json')
-        self.assertEquals(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)
 
     def test_incoming_yaml(self):
         if not yaml:
             return
             
-        expected = """- comments: []
+        expected = b"""- comments: []
   content: bar
   title: foo
 - comments: []
@@ -289,7 +294,7 @@ class IncomingExpressiveTests(MainTests):
   title: foo2
 """
           
-        self.assertEquals(self.client.get('/api/expressive.yaml',
+        self.assertEqual(self.client.get('/api/expressive.yaml',
             HTTP_AUTHORIZATION=self.auth_string).content, expected)
 
         outgoing = yaml.dump({ 'title': 'test', 'content': 'test',
@@ -299,9 +304,9 @@ class IncomingExpressiveTests(MainTests):
         resp = self.client.post('/api/expressive.json', outgoing, content_type='application/x-yaml',
             HTTP_AUTHORIZATION=self.auth_string)
         
-        self.assertEquals(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)
         
-        expected = """- comments: []
+        expected = b"""- comments: []
   content: bar
   title: foo
 - comments: []
@@ -313,7 +318,7 @@ class IncomingExpressiveTests(MainTests):
   content: test
   title: test
 """
-        self.assertEquals(self.client.get('/api/expressive.yaml', 
+        self.assertEqual(self.client.get('/api/expressive.yaml', 
             HTTP_AUTHORIZATION=self.auth_string).content, expected)
 
     def test_incoming_invalid_yaml(self):
@@ -321,7 +326,7 @@ class IncomingExpressiveTests(MainTests):
             '  8**sad asj lja foo',
             HTTP_AUTHORIZATION=self.auth_string,
             content_type='application/x-yaml')
-        self.assertEquals(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)
 
 class Issue36RegressionTests(MainTests):
     """
@@ -351,7 +356,7 @@ class Issue36RegressionTests(MainTests):
             try:
                 response = self.client.post('/api/entries.xml',
                         {'file':fp}, HTTP_AUTHORIZATION=self.auth_string)
-                self.assertEquals(1, len(self.request.FILES), 'request.FILES on POST is empty when it should contain 1 file')
+                self.assertEqual(1, len(self.request.FILES), 'request.FILES on POST is empty when it should contain 1 file')
             finally:
                 fp.close()
 
@@ -365,29 +370,30 @@ class Issue36RegressionTests(MainTests):
         try:
             response = self.client.put('/api/entry-%d.xml' % self.data.pk,
                     {'file': fp}, HTTP_AUTHORIZATION=self.auth_string)
-            self.assertEquals(1, len(self.request.FILES), 'request.FILES on PUT is empty when it should contain 1 file')
+            self.assertEqual(1, len(self.request.FILES), 'request.FILES on PUT is empty when it should contain 1 file')
         finally:
             fp.close()
 
 class ValidationTest(MainTests):
     def test_basic_validation_fails(self):
         resp = self.client.get('/api/echo')
-        self.assertEquals(resp.status_code, 400)
-        self.assertEquals(resp.content, 'Bad Request <ul class="errorlist">'
-            '<li>msg<ul class="errorlist"><li>This field is required.</li>'
-            '</ul></li></ul>')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.content, b'Bad Request <ul class="errorlist">'
+            b'<li>msg<ul class="errorlist"><li>This field is required.</li>'
+            b'</ul></li></ul>')
 
     def test_basic_validation_succeeds(self):
         data = {'msg': 'donuts!'}
         resp = self.client.get('/api/echo', data)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(data, simplejson.loads(resp.content))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data, json.loads(resp.content.decode('utf-8')))
 
 class PlainOldObject(MainTests):
     def test_plain_object_serialization(self):
         resp = self.client.get('/api/popo')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals({'type': 'plain', 'field': 'a field'}, simplejson.loads(resp.content))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({'type': 'plain', 'field': 'a field'},
+                         json.loads(resp.content.decode('utf-8')))
 
 class ListFieldsTest(MainTests):
     def init_delegate(self):
@@ -396,49 +402,49 @@ class ListFieldsTest(MainTests):
         ListFieldsModel(kind='animal', variety='dog', color='brown').save()
 
     def test_single_item(self):
-        expect = '''{
-    "color": "green", 
-    "kind": "fruit", 
-    "id": 1, 
-    "variety": "apple"
-}'''
+        expect = {
+          'color': 'green',
+          'kind': 'fruit',
+          'id': 1,
+          'variety': 'apple'
+          }
         resp = self.client.get('/api/list_fields/1')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp.content, expect)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), expect)
 
 
     def test_multiple_items(self):
-        expect = '''[
-    {
-        "id": 1, 
-        "variety": "apple"
-    }, 
-    {
-        "id": 2, 
-        "variety": "carrot"
-    }, 
-    {
-        "id": 3, 
-        "variety": "dog"
-    }
-]'''
+        expect = [
+          {
+              'id': 1,
+              'variety': 'apple'
+          },
+          {
+              'id': 2,
+              'variety': 'carrot',
+          },
+          {
+              'id': 3,
+              'variety': 'dog',
+          }
+          ]
         resp = self.client.get('/api/list_fields')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp.content, expect)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), expect)
         
 class ErrorHandlingTests(MainTests):
     """Test proper handling of errors by Resource"""
 
     def test_response_not_allowed(self):
         resp = self.client.post('/api/echo')
-        self.assertEquals(resp.status_code, 405)
-        self.assertEquals(resp['Allow'], 'GET, HEAD')
+        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(resp['Allow'], 'GET, HEAD')
 
     def test_not_found_because_of_unexpected_http_method(self):
         # not using self.client.head because it is not present in Django 1.0
         resp = self.client.get('/api/echo', REQUEST_METHOD='HEAD')
-        self.assertEquals(resp.status_code, 404)
-        self.assertEquals(resp.content, '')
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, b'')
 
 
 class Issue58ModelTests(MainTests):
@@ -454,9 +460,9 @@ class Issue58ModelTests(MainTests):
         m2.save()
 
     def test_incoming_json(self):
-        outgoing = simplejson.dumps({ 'read': True, 'model': 'T'})
+        outgoing = json.dumps({ 'read': True, 'model': 'T'})
 
-        expected = """[
+        expected = b"""[
     {
         "read": true, 
         "model": "t"
@@ -470,31 +476,31 @@ class Issue58ModelTests(MainTests):
         # test GET
         result = self.client.get('/api/issue58.json',
                                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
 
         # test POST
         resp = self.client.post('/api/issue58.json', outgoing, content_type='application/json',
                                 HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)
 
 class Issue188ValidateWithFiles(MainTests):
     def test_whoops_no_file_upload(self):
         resp = self.client.post(
             reverse('file-upload-test'),
             data={'chaff': 'pewpewpew'})
-        self.assertEquals(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)
     
     def test_upload_with_file(self):
         tmp_fs = tempfile.NamedTemporaryFile(suffix='.txt')
-        content = 'le_content'
+        content = b'le_content'
         tmp_fs.write(content)
         tmp_fs.seek(0)
         resp = self.client.post(
             reverse('file-upload-test'),
             data={'chaff': 'pewpewpew',
                   'le_file': tmp_fs})
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(simplejson.loads(resp.content),
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.content.decode('utf-8')),
                           {'chaff': 'pewpewpew',
                            'file_size': len(content)})
 
@@ -502,73 +508,73 @@ class EmitterFormat(MainTests):
     def test_format_in_url(self):
         resp = self.client.get('/api/entries.json',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/json; charset=utf-8')
         resp = self.client.get('/api/entries.xml',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'text/xml; charset=utf-8')
         resp = self.client.get('/api/entries.yaml',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/x-yaml; charset=utf-8')
 
     def test_format_in_get_data(self):
         resp = self.client.get('/api/entries/?format=json',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/json; charset=utf-8')
         resp = self.client.get('/api/entries/?format=xml',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'text/xml; charset=utf-8')
         resp = self.client.get('/api/entries/?format=yaml',
                                HTTP_AUTHORIZATION=self.auth_string)
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/x-yaml; charset=utf-8')
         
     def test_format_in_accept_headers(self):
         resp = self.client.get('/api/entries/',
                                HTTP_AUTHORIZATION=self.auth_string,
                                HTTP_ACCEPT='application/json')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/json; charset=utf-8')
         resp = self.client.get('/api/entries/',
                                HTTP_AUTHORIZATION=self.auth_string,
                                HTTP_ACCEPT='text/xml')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'text/xml; charset=utf-8')
         resp = self.client.get('/api/entries/',
                                HTTP_AUTHORIZATION=self.auth_string,
                                HTTP_ACCEPT='application/x-yaml')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/x-yaml; charset=utf-8')
     
     def test_strict_accept_headers(self):
         from . import urls
         self.assertFalse(urls.entries.strict_accept)
-        self.assertEquals(urls.entries.default_emitter, 'json')
+        self.assertEqual(urls.entries.default_emitter, 'json')
         resp = self.client.get('/api/entries/',
                                HTTP_AUTHORIZATION=self.auth_string,
                                HTTP_ACCEPT='text/html')
-        self.assertEquals(resp.status_code, 200)
-        self.assertEquals(resp['Content-type'],
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-type'],
                           'application/json; charset=utf-8')
         
         urls.entries.strict_accept = True
         resp = self.client.get('/api/entries/',
                                HTTP_AUTHORIZATION=self.auth_string,
                                HTTP_ACCEPT='text/html')
-        self.assertEquals(resp.status_code, 406)
+        self.assertEqual(resp.status_code, 406)
 
 class CircularReferenceTest(MainTests):
     def init_delegate(self):
