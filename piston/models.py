@@ -30,7 +30,7 @@ CONSUMER_STATES = (
 )
 
 
-AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', User)
 
 
 def generate_random(length=SECRET_SIZE):
