@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import binascii
+import base64
 
 from . import oauth
 from django.http import HttpResponse, HttpResponseRedirect
@@ -55,7 +56,9 @@ class HttpBasicAuthentication(object):
             if not authmeth.lower() == 'basic':
                 return False
 
-            auth = auth.strip().decode('base64')
+            auth = auth.encode('ascii') # base64 only operates on bytes
+            auth = base64.decodestring(auth.strip())
+            auth = auth.decode('ascii')
             (username, password) = auth.split(':', 1)
         except (ValueError, binascii.Error):
             return False
