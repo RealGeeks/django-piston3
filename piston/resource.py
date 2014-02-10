@@ -9,7 +9,8 @@ from django.views.debug import ExceptionReporter
 from django.views.decorators.vary import vary_on_headers
 from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
-from django.db.models.query import QuerySet
+from django.core.signals import got_request_exception
+from django.db.models.query import QuerySet, RawQuerySet
 from django.http import Http404
 
 try:
@@ -195,8 +196,10 @@ class Resource(object):
             emitter, ct = Emitter.get(em_format)
             fields = handler.fields
 
-            if hasattr(handler, 'list_fields') and isinstance(result, (list, tuple, QuerySet)):
+            if hasattr(handler, 'list_fields') and isinstance(result, (list, tuple, QuerySet, RawQuerySet)):
                 fields = handler.list_fields
+            if callable(fields):
+                fields = fields(request, *args, **kwargs)
         except ValueError:
             result = rc.BAD_REQUEST
             result.content = "Invalid output format specified '%s'." % em_format
@@ -290,8 +293,8 @@ class Resource(object):
         """
         if isinstance(e, FormValidationError):
             return self.form_validation_response(e)
-
-        elif isinstance(e, TypeError):
+        got_request_exception.send(sender=type(self), request=request)
+        if isinstance(e, TypeError):
             result = rc.BAD_REQUEST
             hm = HandlerMethod(meth)
             sig = hm.signature

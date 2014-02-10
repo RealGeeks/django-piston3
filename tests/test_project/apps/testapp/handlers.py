@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from piston3.handler import BaseHandler
 from piston3.utils import rc, validate
 
-from .models import TestModel, ExpressiveTestModel, Comment, InheritedModel, PlainOldObject, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC
+from .models import TestModel, ExpressiveTestModel, Comment, InheritedModel, PlainOldObject, Issue58Model, ListFieldsModel, CircularA, CircularB, CircularC, ConditionalFieldsModel
 from .forms import EchoForm, FormWithFileField
 from test_project.apps.testapp import signals
 
@@ -96,9 +96,28 @@ class Issue58Handler(BaseHandler):
         else:
             super(Issue58Model, self).create(request)
 
+class ConditionalFieldsHandler(BaseHandler):
+    model = ConditionalFieldsModel
+
+    def fields(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return ('field_one', 'field_two', 'fk_field')
+        return ('field_one',)
+    
+    def list_fields(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return ('field_one', 'field_two')
+        return ('field_two',)
+    
+    def read(self, request, object_id=None):
+        qs = self.model.objects.all()
+        if object_id:
+            qs = qs.get(pk=object_id)
+        return qs
+
 class FileUploadHandler(BaseHandler):
     allowed_methods = ('POST',)
-    
+
     @validate(FormWithFileField)
     def create(self, request):
         return {'chaff': request.form.cleaned_data['chaff'],
@@ -118,3 +137,4 @@ class CircularAHandler(BaseHandler):
     allowed_methods = ('GET',)
     fields = ('name', 'link')
     model = CircularC
+

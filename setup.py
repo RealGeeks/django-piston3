@@ -31,7 +31,6 @@ setup(
     packages = [p.replace('piston', 'piston3')
                 for p in find_packages(exclude=['piston3'])],
     package_dir = {'piston3': 'piston'},
-    ## namespace_packages = ['piston'],
     include_package_data = True,
     zip_safe = False,
     classifiers = [

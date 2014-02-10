@@ -13,7 +13,7 @@ except ImportError:
 
 import json
 
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet, RawQuerySet
 from django.db.models import Model, permalink
 from django.utils.xmlutils import SimplerXMLGenerator
 from django.utils.encoding import smart_text
@@ -105,7 +105,7 @@ class Emitter(object):
 
             self.stack.append(thing)
 
-            if isinstance(thing, QuerySet):
+            if isinstance(thing, (QuerySet, RawQuerySet)):
                 ret = _qs(thing, fields)
             elif isinstance(thing, (tuple, list, set)):
                 ret = _list(thing, fields)
@@ -169,10 +169,10 @@ class Emitter(object):
                 # use the list_fields from the base handler and accept that
                 # the nested models won't appear properly
                 # Refs #157
-                if handler:
-                    fields = getattr(handler, 'fields')    
+                if handler and not fields:
+                    fields = getattr(handler, 'fields', None)    
                 
-                if not fields or hasattr(handler, 'fields'):
+                if not fields:
                     """
                     Fields was not specified, try to find teh correct
                     version in the typemapper we were sent.
@@ -245,19 +245,23 @@ class Emitter(object):
                         ret[maybe_field] = _any(met_fields[maybe_field](data))
 
                     else:
-                        maybe = getattr(data, maybe_field, None)
-                        if maybe is not None:
-                            if callable(maybe):
-                                if len(inspect.getargspec(maybe)[0]) <= 1:
-                                    ret[maybe_field] = _any(maybe())
-                            else:
-                                ret[maybe_field] = _any(maybe)
-                        else:
+                        try:
+                            maybe = getattr(data, maybe_field)
+                        except AttributeError:
+                            maybe = None
                             handler_f = getattr(handler or self.handler, maybe_field, None)
 
                             if handler_f:
                                 ret[maybe_field] = _any(handler_f(data))
-
+                        else:
+                            if callable(maybe):
+                                argspec = inspect.getargspec(maybe)
+                                args_len = len(argspec[0])
+                                defaults_len = len(argspec[2]) if argspec[2] else 0
+                                if args_len - defaults_len <= 1:
+                                    ret[maybe_field] = _any(maybe())
+                            else:
+                                ret[maybe_field] = _any(maybe)
             else:
                 for f in data._meta.fields:
                     ret[f.attname] = _any(getattr(data, f.attname))

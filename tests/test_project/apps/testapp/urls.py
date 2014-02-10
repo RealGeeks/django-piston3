@@ -1,10 +1,11 @@
 from django.conf.urls import *
 from piston3.resource import Resource
-from piston3.authentication import HttpBasicAuthentication, HttpBasicSimple
+from piston3.authentication import HttpBasicAuthentication, HttpBasicSimple, NoAuthentication
 
-from test_project.apps.testapp.handlers import EntryHandler, ExpressiveHandler, AbstractHandler, EchoHandler, PlainOldObjectHandler, Issue58Handler, ListFieldsHandler, FileUploadHandler, CircularAHandler
+from test_project.apps.testapp.handlers import EntryHandler, ExpressiveHandler, AbstractHandler, EchoHandler, PlainOldObjectHandler, Issue58Handler, ListFieldsHandler, FileUploadHandler, CircularAHandler, ConditionalFieldsHandler
 
 auth = HttpBasicAuthentication(realm='TestApplication')
+noauth = NoAuthentication()
 
 entries = Resource(handler=EntryHandler, authentication=auth)
 expressive = Resource(handler=ExpressiveHandler, authentication=auth)
@@ -13,6 +14,7 @@ echo = Resource(handler=EchoHandler)
 popo = Resource(handler=PlainOldObjectHandler)
 list_fields = Resource(handler=ListFieldsHandler)
 issue58 = Resource(handler=Issue58Handler)
+conditional = Resource(handler=ConditionalFieldsHandler, authentication=[auth, noauth])
 fileupload = Resource(handler=FileUploadHandler)
 circular_a = Resource(handler=CircularAHandler)
 
@@ -60,6 +62,9 @@ urlpatterns = patterns(
     url(r'^list_fields/(?P<id>.+)$', list_fields),
     
     url(r'^popo$', popo),
+    
+    url(r'^conditional_fields$', conditional, name='conditional-list'),
+    url(r'^conditional_fields/(?P<object_id>\d+)$', conditional, name='conditional-detail'),
 )
 
 

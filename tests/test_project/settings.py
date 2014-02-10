@@ -30,6 +30,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'piston.middleware.CommonMiddlewareCompatProxy',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
 SECRET_KEY = 'bla'
