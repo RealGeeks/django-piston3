@@ -23,7 +23,6 @@ THE SOFTWARE.
 """
 from six import PY2, PY3, text_type as unicode
 
-import cgi
 if PY3:
     import urllib.parse as urllib
     import urllib.parse as urlparse
@@ -145,7 +144,7 @@ class OAuthToken(object):
         """ Returns a token from something like:
         oauth_token_secret=xxx&oauth_token=xxx
         """
-        params = cgi.parse_qs(s, keep_blank_values=False)
+        params = urlparse.parse_qs(s, keep_blank_values=False)
         key = params['oauth_token'][0]
         secret = params['oauth_token_secret'][0]
         token = OAuthToken(key, secret)
@@ -365,7 +364,7 @@ class OAuthRequest(object):
     @staticmethod
     def _split_url_string(param_str):
         """Turn URL string into parameters."""
-        parameters = cgi.parse_qs(param_str, keep_blank_values=False)
+        parameters = urlparse.parse_qs(param_str, keep_blank_values=False)
         for k, v in parameters.items():
             parameters[k] = urllib.unquote(v[0])
         return parameters
@@ -616,11 +615,9 @@ class OAuthSignatureMethod_HMAC_SHA1(OAuthSignatureMethod):
         )
 
         key = '%s&' % escape(consumer.secret)
-        key = key.encode('ascii')
         if token:
             key += escape(token.secret)
         raw = '&'.join(sig)
-        raw = raw.encode('ascii')
         return key, raw
 
     def build_signature(self, oauth_request, consumer, token):
@@ -630,10 +627,15 @@ class OAuthSignatureMethod_HMAC_SHA1(OAuthSignatureMethod):
 
         # HMAC object.
         import hashlib
+        #PY3: hmac doesn't work with str
+        key = key.encode('ascii')
+        raw = raw.encode('ascii')
         hashed = hmac.new(key, raw, hashlib.sha1)
 
         # Calculate the digest base 64.
-        return binascii.b2a_base64(hashed.digest())[:-1]
+        signature = binascii.b2a_base64(hashed.digest())[:-1]
+        #PY3: decode to get str
+        return signature.decode('ascii')
 
 
 class OAuthSignatureMethod_PLAINTEXT(OAuthSignatureMethod):
