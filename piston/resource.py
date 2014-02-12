@@ -13,10 +13,7 @@ from django.core.signals import got_request_exception
 from django.db.models.query import QuerySet, RawQuerySet
 from django.http import Http404
 
-try:
-    import mimeparse
-except ImportError:
-    mimeparse = None
+import mimeparse
 
 from .emitters import Emitter
 from .handler import typemapper
