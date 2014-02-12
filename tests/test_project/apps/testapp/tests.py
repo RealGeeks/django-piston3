@@ -66,13 +66,13 @@ class OAuthTests(MainTests):
         request.sign_request(self.signature_method, oaconsumer, None)
 
         response = self.client.get('/api/oauth/request_token', request.parameters)
-        oatoken = oauth.OAuthToken.from_string(response.content)
+        oatoken = oauth.OAuthToken.from_string(response.content.decode('utf-8'))
 
         token = Token.objects.get(key=oatoken.key, token_type=Token.REQUEST)
         self.assertEqual(token.secret, oatoken.secret)
 
         # Simulate user authentication...
-        self.failUnless(self.client.login(username='admin', password='admin'))
+        self.assertTrue(self.client.login(username='admin', password='admin'))
         request = oauth.OAuthRequest.from_token_and_callback(token=oatoken,
                 callback='http://printer.example.com/request_token_ready',
                 http_url='http://testserver/api/oauth/authorize')
@@ -94,8 +94,8 @@ class OAuthTests(MainTests):
 
         # Response should be a redirect...
         self.assertEqual(302, response.status_code)
-        self.failUnless(response['Location'].startswith("http://printer.example.com/request_token_ready?"))
-        self.failUnless(('oauth_token='+oatoken.key in response['Location']))
+        self.assertTrue(response['Location'].startswith("http://printer.example.com/request_token_ready?"))
+        self.assertTrue(('oauth_token='+oatoken.key in response['Location']))
         
         # Actually we can't test this last part, since it's 1.0a.
         # Obtain access token...
