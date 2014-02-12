@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-from six import PY3, text_type
+from six import PY2, PY3, text_type as unicode
 
 import cgi
 if PY3:
@@ -56,10 +56,11 @@ def escape(s):
 
 def _utf8_str(s):
     """Convert unicode to utf-8."""
-    if isinstance(s, text_type):
+    if isinstance(s, unicode):
         return s.encode("utf-8")
-    else:
-        return bytes(s)
+    if PY2:
+        return str(s)
+    return str(s).encode('utf-8')
 
 def generate_timestamp():
     """Get seconds since epoch (UTC)."""
@@ -139,6 +140,7 @@ class OAuthToken(object):
             data['oauth_callback_confirmed'] = self.callback_confirmed
         return urllib.urlencode(data)
  
+    @staticmethod
     def from_string(s):
         """ Returns a token from something like:
         oauth_token_secret=xxx&oauth_token=xxx
@@ -152,7 +154,6 @@ class OAuthToken(object):
         except KeyError:
             pass # 1.0, no callback confirmed.
         return token
-    from_string = staticmethod(from_string)
 
     def __str__(self):
         return self.to_string()
@@ -267,6 +268,7 @@ class OAuthRequest(object):
         """Calls the build signature method within the signature method."""
         return signature_method.build_signature(self, consumer, token)
 
+    @staticmethod
     def from_request(http_method, http_url, headers=None, parameters=None,
             query_string=None):
         """Combines multiple parameter sources."""
@@ -301,8 +303,8 @@ class OAuthRequest(object):
             return OAuthRequest(http_method, http_url, parameters)
 
         return None
-    from_request = staticmethod(from_request)
 
+    @staticmethod
     def from_consumer_and_token(oauth_consumer, token=None,
             callback=None, verifier=None, http_method=HTTP_METHOD,
             http_url=None, parameters=None):
@@ -329,8 +331,8 @@ class OAuthRequest(object):
             parameters['oauth_callback'] = callback
 
         return OAuthRequest(http_method, http_url, parameters)
-    from_consumer_and_token = staticmethod(from_consumer_and_token)
 
+    @staticmethod
     def from_token_and_callback(token, callback=None, http_method=HTTP_METHOD,
             http_url=None, parameters=None):
         if not parameters:
@@ -342,8 +344,8 @@ class OAuthRequest(object):
             parameters['oauth_callback'] = callback
 
         return OAuthRequest(http_method, http_url, parameters)
-    from_token_and_callback = staticmethod(from_token_and_callback)
 
+    @staticmethod
     def _split_header(header):
         """Turn Authorization: header into parameters."""
         params = {}
@@ -359,15 +361,14 @@ class OAuthRequest(object):
             # Remove quotes and unescape the value.
             params[param_parts[0]] = urllib.unquote(param_parts[1].strip('\"'))
         return params
-    _split_header = staticmethod(_split_header)
 
+    @staticmethod
     def _split_url_string(param_str):
         """Turn URL string into parameters."""
         parameters = cgi.parse_qs(param_str, keep_blank_values=False)
         for k, v in parameters.items():
             parameters[k] = urllib.unquote(v[0])
         return parameters
-    _split_url_string = staticmethod(_split_url_string)
 
 class OAuthServer(object):
     """A worker to check the validity of a request against a data store."""
@@ -615,9 +616,11 @@ class OAuthSignatureMethod_HMAC_SHA1(OAuthSignatureMethod):
         )
 
         key = '%s&' % escape(consumer.secret)
+        key = key.encode('ascii')
         if token:
             key += escape(token.secret)
         raw = '&'.join(sig)
+        raw = raw.encode('ascii')
         return key, raw
 
     def build_signature(self, oauth_request, consumer, token):
@@ -626,12 +629,8 @@ class OAuthSignatureMethod_HMAC_SHA1(OAuthSignatureMethod):
             token)
 
         # HMAC object.
-        try:
-            import hashlib # 2.5
-            hashed = hmac.new(key, raw, hashlib.sha1)
-        except:
-            import sha # Deprecated
-            hashed = hmac.new(key, raw, sha)
+        import hashlib
+        hashed = hmac.new(key, raw, hashlib.sha1)
 
         # Calculate the digest base 64.
         return binascii.b2a_base64(hashed.digest())[:-1]
