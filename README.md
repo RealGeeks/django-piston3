@@ -5,7 +5,11 @@ Piston for Python 3.3+ and Django 1.6+
 
 * Compatible with __Python 2.7__
 * Forked from <https://bitbucket.org/spookylukey/django-piston>
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..spookylukey))
 * Based on <https://bitbucket.org/jespern/django-piston>
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..jespern))
+* Merged with <https://bitbucket.org/j00bar/django-piston>
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..j00bar))
 
 
 Usage
