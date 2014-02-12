@@ -50,13 +50,14 @@ class OAuthAuthenticationForm(forms.Form):
     @staticmethod
     def get_csrf_signature(key, token):
         # Check signature...
-        try:
-            import hashlib # 2.5
-            hashed = hmac.new(key, token, hashlib.sha1)
-        except:
-            import sha # deprecated
-            hashed = hmac.new(key, token, sha)
+        import hashlib # 2.5
+        #PY3: hmac doesn't work with str
+        key = key.encode('ascii')
+        token = token.encode('ascii')
+        hashed = hmac.new(key, token, hashlib.sha1)
 
-        # calculate the digest base 64
-        return base64.b64encode(hashed.digest())
+        # calculate the digest base 64 (PY3: returns bytes)
+        signature = base64.b64encode(hashed.digest())
+        #PY3: decode to get str
+        return signature.decode('ascii')
 
