@@ -5,11 +5,11 @@ Piston for Python 3.3+ and Django 1.6+
 
 * Compatible with __Python 2.7__
 * Forked from <https://bitbucket.org/spookylukey/django-piston>
-  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..spookylukey))
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..spookylukey#diff))
 * Based on <https://bitbucket.org/jespern/django-piston>
-  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..jespern))
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..jespern#diff))
 * Merged with <https://bitbucket.org/j00bar/django-piston>
-  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..j00bar))
+  ([diff](https://bitbucket.org/userzimmermann/django-piston3/branches/compare/master..j00bar#diff))
 
 
 Usage
@@ -36,5 +36,5 @@ Or from [PyPI](https://pypi.python.org/pypi/django-piston3):
 ### Requirements
 
 * [`six`](https://bitbucket.org/gutworth/six)
-
+* [`python-mimeparse`](https://github.com/dbtsai/python-mimeparse)
 * [`django >= 1.6`](http://www.djangoproject.com)
