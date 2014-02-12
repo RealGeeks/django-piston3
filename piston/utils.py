@@ -269,7 +269,10 @@ class Mimer(object):
             
             if loadee:
                 try:
-                    self.request.data = loadee(self.request.body)
+                    data = self.request.body
+                    #PY3: Loaders usually don't work with bytes:
+                    data = data.decode('utf-8')
+                    self.request.data = loadee(data)
                         
                     # Reset both POST and PUT from request, as its
                     # misleading having their presence around.
