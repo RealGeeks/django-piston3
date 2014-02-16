@@ -1,5 +1,8 @@
 from __future__ import print_function
 
+from operator import add
+from itertools import product, permutations
+
 import json
 
 from django.test import TestCase
@@ -156,19 +159,31 @@ class MultiXMLTests(MainTests):
         self.t1_data.save()
         self.t2_data = TestModel()
         self.t2_data.save()
+        # XML field data to dynamically include in `expected` strings:
+        self.test1_xml = b'<test1>None</test1>'
+        self.test2_xml = b'<test2>None</test2>'
 
     def test_multixml(self):
-        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><resource><test1>None</test1><test2>None</test2></resource><resource><test1>None</test1><test2>None</test2></resource></response>'
+        ## expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><resource><test1>None</test1><test2>None</test2></resource><resource><test1>None</test1><test2>None</test2></resource></response>'
+        #PY3: Undetermined order of <testn> field elements
+        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><resource>%s%s</resource><resource>%s%s</resource></response>'
         result = self.client.get('/api/entries.xml',
                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEqual(expected, result)
+        ## self.assertEqual(expected, result)
+        self.assertIn(result, [expected % add(*xml) for xml in product(
+          permutations((self.test1_xml, self.test2_xml)),
+          repeat=2)])
 
     def test_singlexml(self):
         obj = TestModel.objects.all()[0]
-        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><test1>None</test1><test2>None</test2></response>'
+        ## expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response><test1>None</test1><test2>None</test2></response>'
+        #PY3: Undetermined order of <testn> field elements
+        expected = b'<?xml version="1.0" encoding="utf-8"?>\n<response>%s%s</response>'
         result = self.client.get('/api/entry-%d.xml' % (obj.pk,),
                 HTTP_AUTHORIZATION=self.auth_string).content
-        self.assertEqual(expected, result)
+        ## self.assertEqual(expected, result)
+        self.assertIn(result, [expected % xml for xml in permutations(
+          (self.test1_xml, self.test2_xml))])
 
 class AbstractBaseClassTests(MainTests):
     def init_delegate(self):
