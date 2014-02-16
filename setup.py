@@ -10,11 +10,13 @@ except ImportError:
     
 import os
 
+VERSION = open('VERSION').read().strip()
+
 REQUIRES = open('requirements.txt').read()
 
 setup(
     name = "django-piston3",
-    version = "0.2.3",
+    version = VERSION,
   ##   url = 'http://bitbucket.org/jespern/django-piston/wiki/Home',
 	## download_url = 'http://bitbucket.org/jespern/django-piston/downloads/',
     url = 'https://bitbucket.org/userzimmermann/django-piston3',
@@ -27,7 +29,7 @@ setup(
     author_email = 'jesper@noehr.org',
     maintainer = 'Stefan Zimmermann',
     maintainer_email = 'zimmermann.code@gmail.com',
-    install_requires=REQUIRES,
+    install_requires = REQUIRES,
     packages = [p.replace('piston', 'piston3')
                 for p in find_packages(exclude=['piston3'])],
     package_dir = {'piston3': 'piston'},
