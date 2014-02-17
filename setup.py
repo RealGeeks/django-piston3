@@ -14,6 +14,8 @@ VERSION = open('VERSION').read().strip()
 
 REQUIRES = open('requirements.txt').read()
 
+README = open('README.md').read()
+
 setup(
     name = "django-piston3",
     version = VERSION,
@@ -25,6 +27,7 @@ setup(
     ## description = "Piston is a Django mini-framework creating APIs.",
     description = "Piston for Python 3.3+ and Django 1.6+"
                   " - Compatible with Python 2.7",
+    long_description = README,
     author = 'Jesper Noehr',
     author_email = 'jesper@noehr.org',
     maintainer = 'Stefan Zimmermann',
@@ -44,5 +47,10 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Topic :: Internet :: WWW/HTTP',
-    ]
+    ],
+    keywords = [
+        'django', 'piston3', 'piston',
+        'web', 'framework', 'api', 'rest',
+        'python3',
+    ],
 )
