@@ -1,3 +1,9 @@
+0.3pre1
+-------
+
+* Fixed package setup: Added `README.md` to `MANIFEST.in`
+
+
 0.3pre0
 -------
 
