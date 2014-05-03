@@ -54,9 +54,9 @@ urlpatterns = patterns(
     url(r'^circular_a/$', circular_a),
 
     # oauth entrypoints
-    url(r'^oauth/request_token$', 'piston.authentication.oauth_request_token'),
-    url(r'^oauth/authorize$', 'piston.authentication.oauth_user_auth'),
-    url(r'^oauth/access_token$', 'piston.authentication.oauth_access_token'),
+    url(r'^oauth/request_token$', 'piston3.authentication.oauth_request_token'),
+    url(r'^oauth/authorize$', 'piston3.authentication.oauth_user_auth'),
+    url(r'^oauth/access_token$', 'piston3.authentication.oauth_access_token'),
 
     url(r'^list_fields$', list_fields),
     url(r'^list_fields/(?P<id>.+)$', list_fields),

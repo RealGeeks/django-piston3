@@ -26,9 +26,9 @@ SITE_ID = 1
 ROOT_URLCONF = 'test_project.urls'
 
 MIDDLEWARE_CLASSES = (
-    'piston.middleware.ConditionalMiddlewareCompatProxy',
+    'piston3.middleware.ConditionalMiddlewareCompatProxy',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'piston.middleware.CommonMiddlewareCompatProxy',
+    'piston3.middleware.CommonMiddlewareCompatProxy',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
