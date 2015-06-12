@@ -244,6 +244,11 @@ class Resource(object):
         """True iff result is a HttpResponse and contains non-string content."""
         if not isinstance(result, HttpResponse):
             return False
+        elif django.VERSION >= (1, 7):
+            # no chance to check type of input content anymore,
+            # but responses with other status codes than 200
+            # should not contain real payload
+            return result.status_code == 200
         elif django.VERSION >= (1, 4):
             return result._base_content_is_iter
         else:
