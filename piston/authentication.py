@@ -118,7 +118,7 @@ def initialize_server_request(request):
     """
     if request.method == "POST": #and \
 #       request.META['CONTENT_TYPE'] == "application/x-www-form-urlencoded":
-        params = dict(request.REQUEST.items())
+        params = dict(request.POST.items())
     else:
         params = { }
 
