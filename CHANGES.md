@@ -1,3 +1,8 @@
+0.3pre2
+-------
+
+* Fixed compatibility with Django 1.7 and 1.8
+
 0.3pre1
 -------
 
