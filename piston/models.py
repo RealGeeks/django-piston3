@@ -47,6 +47,10 @@ class Nonce(models.Model):
     def __unicode__(self):
         return u"Nonce %s for %s" % (self.key, self.consumer_key)
 
+    if PY3:
+        def __str__(self):
+            return self.__unicode__()
+
 
 class Consumer(models.Model):
     name = models.CharField(max_length=255)
@@ -63,6 +67,10 @@ class Consumer(models.Model):
 
     def __unicode__(self):
         return u"Consumer %s with key %s" % (self.name, self.key)
+
+    if PY3:
+        def __str__(self):
+            return self.__unicode__()
 
     def generate_random_codes(self):
         """
@@ -109,6 +117,10 @@ class Token(models.Model):
 
     def __unicode__(self):
         return u"%s Token %s for %s" % (self.get_token_type_display(), self.key, self.consumer)
+
+    if PY3:
+        def __str__(self):
+            return self.__unicode__()
 
     def to_string(self, only_key=False):
         token_dict = {
