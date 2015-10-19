@@ -1,11 +1,12 @@
 syntax: glob
 *~
 #*#
+*.orig
 *.egg
 *.pyc
 build
 dist
-django_piston.egg-info
+django_piston3.egg-info
 bin
 parts
 downloads
@@ -15,3 +16,4 @@ develop-eggs
 .svn
 *.swp
 docs/_build
+.tox
