@@ -31,7 +31,7 @@ for username, password in SIMPLE_USERS:
 multiauth = Resource(handler=PlainOldObjectHandler, 
                         authentication=AUTHENTICATORS)
 
-urlpatterns = patterns(
+urlpatterns = [
     '',
     url(r'^entries/$', entries),
     url(r'^entries/(?P<pk>.+)/$', entries),
@@ -65,6 +65,6 @@ urlpatterns = patterns(
     
     url(r'^conditional_fields$', conditional, name='conditional-list'),
     url(r'^conditional_fields/(?P<object_id>\d+)$', conditional, name='conditional-detail'),
-)
+]
 
 

@@ -9,11 +9,11 @@ auth = HttpBasicAuthentication(realm='My sample API')
 
 blogposts = Resource(handler=BlogpostHandler, authentication=auth)
 
-urlpatterns = patterns('',
+urlpatterns = ['',
     url(r'^posts/$', blogposts),
     url(r'^posts/(?P<emitter_format>.+)/$', blogposts),
     url(r'^posts\.(?P<emitter_format>.+)', blogposts, name='blogposts'),
 
     # automated documentation
     url(r'^$', documentation_view),
-)
+]
